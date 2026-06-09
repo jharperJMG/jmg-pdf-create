@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Client Intake — Jason Mitchell Group</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#0F1C36;
+    --navy-2:#16264a;
+    --orange:#EA580C;
+    --orange-soft:#fff1e8;
+    --ink:#1b2230;
+    --muted:#6b7480;
+    --line:#e6e9ef;
+    --bg:#f4f6fa;
+    --card:#ffffff;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:28px 18px 80px}
+
+  /* Header */
+  .masthead{
+    background:linear-gradient(180deg,var(--navy) 0%,var(--navy-2) 100%);
+    border-radius:var(--radius);
+    padding:26px 26px 22px;
+    color:#fff;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(15,28,54,.18);
+  }
+  .masthead::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--orange);
+  }
+  .brand{font-size:13px;letter-spacing:.22em;font-weight:700;text-transform:uppercase;color:#fff}
+  .brand .dot{color:var(--orange)}
+  .masthead h1{margin:10px 0 4px;font-size:24px;letter-spacing:-.01em}
+  .masthead p{margin:0;color:#aebbd4;font-size:14px}
+
+  /* Card */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:24px;
+    margin-top:18px;
+    box-shadow:0 1px 2px rgba(16,24,40,.04);
+  }
+  .eyebrow{
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;
+    color:var(--muted);margin:0 0 16px;
+  }
+
+  label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .req{color:var(--orange)}
+  .field{margin-bottom:18px}
+  input[type="text"],input[type="email"],textarea{
+    width:100%;font:inherit;color:var(--ink);
+    padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  textarea{resize:vertical;min-height:74px}
+  input:focus,textarea:focus{
+    outline:none;border-color:var(--orange);
+    box-shadow:0 0 0 3px rgba(234,88,12,.14);
+  }
+  input.invalid,textarea.invalid{border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.12)}
+  .hint{font-size:12px;color:var(--muted);margin-top:5px}
+  .errline{font-size:12px;color:#dc2626;margin-top:5px;display:none}
+  .errline.show{display:block}
+
+  /* Dropzone */
+  .drop{
+    border:2px dashed #cdd4e0;border-radius:12px;padding:26px 18px;text-align:center;
+    cursor:pointer;background:#fbfcfe;transition:border-color .15s,background .15s;
+  }
+  .drop:hover{border-color:var(--orange);background:var(--orange-soft)}
+  .drop.drag{border-color:var(--orange);background:var(--orange-soft)}
+  .drop strong{color:var(--navy)}
+  .drop .sub{font-size:13px;color:var(--muted);margin-top:4px}
+  .drop svg{width:30px;height:30px;color:var(--orange);margin-bottom:6px}
+
+  /* Thumbs */
+  .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:16px}
+  .thumb{position:relative;aspect-ratio:1/1;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#eef1f6}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb button{
+    position:absolute;top:5px;right:5px;width:24px;height:24px;border:none;border-radius:50%;
+    background:rgba(15,28,54,.78);color:#fff;font-size:15px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .thumb button:hover{background:var(--orange)}
+  .countline{font-size:13px;color:var(--muted);margin-top:12px}
+  .processing{font-size:13px;color:var(--orange);margin-top:12px;font-weight:600;display:none}
+  .processing.show{display:block}
+  .notice{
+    display:none;margin-top:12px;padding:10px 12px;border-radius:10px;
+    background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:13px;
+  }
+  .notice.show{display:block}
+
+  /* Actions */
+  .actions{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
+  button.btn{
+    font:inherit;font-weight:600;border-radius:10px;padding:12px 22px;cursor:pointer;border:1px solid transparent;
+  }
+  .btn-primary{background:var(--orange);color:#fff}
+  .btn-primary:hover{background:#c9490a}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:#c2c9d6}
+
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:26px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div class="brand">Jason Mitchell Group <span class="dot">•</span> Technology</div>
+    <h1>Client Intake Form</h1>
+    <p>Enter the client's details, add photos, and generate a branded PDF.</p>
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Client Information</p>
+
+    <div class="field">
+      <label for="name">Full name <span class="req">*</span></label>
+      <input type="text" id="name" autocomplete="name" placeholder="Jane Doe" />
+      <div class="errline" id="err-name">Please enter a name.</div>
+    </div>
+
+    <div class="field">
+      <label for="email">Email <span class="req">*</span></label>
+      <input type="email" id="email" autocomplete="email" placeholder="jane@example.com" />
+      <div class="errline" id="err-email">Please enter a valid email address.</div>
+    </div>
+
+    <div class="field">
+      <label for="address">Address</label>
+      <textarea id="address" placeholder="123 Main St&#10;Phoenix, AZ 85004"></textarea>
+      <div class="hint">Street, city, state, and ZIP — one per line is fine.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Photos</p>
+
+    <div class="drop" id="drop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div><strong>Tap to add photos</strong> or drag them here</div>
+      <div class="sub">JPG, PNG, or HEIC — multiple at once</div>
+      <input type="file" id="file" accept="image/*" multiple hidden />
+    </div>
+
+    <div class="processing" id="processing">Processing photos…</div>
+    <div class="notice" id="notice"></div>
+    <div class="countline" id="countline">No photos added yet.</div>
+    <div class="thumbs" id="thumbs"></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="generate">Generate PDF</button>
+    <button class="btn btn-ghost" id="clear">Clear form</button>
+  </div>
+
+  <div class="foot">Generated documents are created on this device — nothing is uploaded.</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const photos = []; // { dataURL, w, h, name }
+  let nextId = 0;
+
+  const $ = id => document.getElementById(id);
+  const drop = $("drop"), fileInput = $("file"), thumbs = $("thumbs");
+  const countline = $("countline"), processing = $("processing");
+  const genBtn = $("generate"), clearBtn = $("clear");
+
+  // ---------- Photo intake ----------
+  drop.addEventListener("click", () => fileInput.click());
+  ["dragenter","dragover"].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); }));
+  ["dragleave","drop"].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); }));
+  drop.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
+  fileInput.addEventListener("change", e => { handleFiles(e.target.files); fileInput.value = ""; });
+
+  async function handleFiles(fileList){
+    const all = Array.from(fileList);
+    const files = all.filter(f => f.type.startsWith("image/"));
+    const skipped = all.filter(f => !f.type.startsWith("image/")).map(f => f.name || "file");
+    if(files.length){
+      processing.classList.add("show");
+      genBtn.disabled = true;
+      for(const f of files){
+        try{
+          const img = await processImage(f);
+          photos.push(Object.assign({ id: nextId++ }, img));
+          renderThumb(photos[photos.length-1]);
+        }catch(err){
+          console.error("Could not read", f.name, err);
+          skipped.push(f.name || "image");
+        }
+      }
+      processing.classList.remove("show");
+      genBtn.disabled = false;
+    }
+    showSkipped(skipped);
+    updateCount();
+  }
+
+  function showSkipped(names){
+    const notice = $("notice");
+    if(!names.length){ notice.classList.remove("show"); notice.textContent = ""; return; }
+    const list = names.join(", ");
+    notice.textContent = names.length === 1
+      ? "Couldn\u2019t read \u201C" + list + "\u201D \u2014 it may be an unsupported format (HEIC photos won\u2019t open in some browsers). Try a JPG or PNG."
+      : "Couldn\u2019t read " + names.length + " files (" + list + ") \u2014 they may be an unsupported format like HEIC in this browser. Try JPG or PNG.";
+    notice.classList.add("show");
+  }
+
+  // Resize + re-encode to JPEG; respects EXIF orientation where supported.
+  async function processImage(file){
+    const MAX = 1600;
+    let source;
+    try{
+      source = await createImageBitmap(file, { imageOrientation: "from-image" });
+    }catch(_){
+      source = await loadImgEl(file);
+    }
+    const sw = source.width, sh = source.height;
+    const scale = Math.min(1, MAX / Math.max(sw, sh));
+    const w = Math.max(1, Math.round(sw * scale));
+    const h = Math.max(1, Math.round(sh * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";            // flatten any transparency
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(source, 0, 0, w, h);
+    if(source.close) source.close();
+    return { dataURL: canvas.toDataURL("image/jpeg", 0.82), w, h, name: file.name };
+  }
+
+  function loadImgEl(file){
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); res(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("decode failed")); };
+      img.src = url;
+    });
+  }
+
+  function renderThumb(p){
+    const cell = document.createElement("div");
+    cell.className = "thumb";
+    cell.dataset.id = p.id;
+    const im = document.createElement("img");
+    im.src = p.dataURL; im.alt = p.name;
+    const rm = document.createElement("button");
+    rm.type = "button"; rm.textContent = "×"; rm.title = "Remove";
+    rm.addEventListener("click", () => removePhoto(p.id));
+    cell.appendChild(im); cell.appendChild(rm);
+    thumbs.appendChild(cell);
+  }
+
+  function removePhoto(id){
+    const i = photos.findIndex(p => p.id === id);
+    if(i > -1) photos.splice(i, 1);
+    const node = thumbs.querySelector('[data-id="'+id+'"]');
+    if(node) node.remove();
+    updateCount();
+  }
+
+  function updateCount(){
+    countline.textContent = photos.length
+      ? photos.length + (photos.length === 1 ? " photo added." : " photos added.")
+      : "No photos added yet.";
+  }
+
+  // ---------- Validation ----------
+  function setError(inputId, errId, show){
+    $(inputId).classList.toggle("invalid", show);
+    $(errId).classList.toggle("show", show);
+  }
+  function validate(){
+    const name = $("name").value.trim();
+    const email = $("email").value.trim();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    setError("name", "err-name", !name);
+    setError("email", "err-email", !emailOk);
+    return name && emailOk;
+  }
+  ["name","email"].forEach(id => $(id).addEventListener("input", () => {
+    if($(id).classList.contains("invalid")) validate();
+  }));
+
+  // ---------- PDF ----------
+  genBtn.addEventListener("click", () => {
+    if(!validate()){
+      const bad = document.querySelector(".invalid");
+      if(bad) bad.scrollIntoView({ behavior:"smooth", block:"center" });
+      return;
+    }
+    buildPDF();
+  });
+
+  function buildPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:"pt", format:"letter" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 48;
+    const contentW = pageW - margin * 2;
+    const footerY = pageH - 28;
+    const bottomLimit = footerY - 14;
+
+    const dateStr = new Date().toLocaleDateString(undefined,
+      { year:"numeric", month:"long", day:"numeric" });
+
+    const NAVY = [15,28,54], ORANGE = [234,88,12], MUTED = [120,128,138], INK = [30,34,46];
+
+    drawMasthead();
+    let y = 134;
+
+    field("Full name", $("name").value.trim());
+    field("Email", $("email").value.trim());
+    field("Address", $("address").value.trim() || "—");
+
+    // Photos section
+    ensure(40);
+    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor.apply(doc, NAVY);
+    doc.text("Photos (" + photos.length + ")", margin, y);
+    y += 8;
+    doc.setDrawColor(230,232,238); doc.setLineWidth(1);
+    doc.line(margin, y, pageW - margin, y);
+    y += 18;
+
+    if(photos.length === 0){
+      doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor.apply(doc, MUTED);
+      doc.text("No photos were added.", margin, y);
+    } else {
+      const gap = 16, cols = 2, rowH = 200, pad = 8;
+      const cellW = (contentW - gap * (cols - 1)) / cols;
+      let col = 0, rowTop = y;
+      photos.forEach(p => {
+        if(col === 0 && rowTop + rowH > bottomLimit){ doc.addPage(); rowTop = margin; }
+        const x = margin + col * (cellW + gap);
+        doc.setFillColor(243,244,246);
+        doc.roundedRect(x, rowTop, cellW, rowH, 6, 6, "F");
+        const boxW = cellW - pad * 2, boxH = rowH - pad * 2;
+        const r = Math.min(boxW / p.w, boxH / p.h);
+        const dw = p.w * r, dh = p.h * r;
+        doc.addImage(p.dataURL, "JPEG",
+          x + (cellW - dw) / 2, rowTop + (rowH - dh) / 2, dw, dh);
+        col++;
+        if(col === cols){ col = 0; rowTop += rowH + gap; }
+      });
+    }
+
+    // Footers on every page
+    const total = doc.internal.getNumberOfPages();
+    for(let i = 1; i <= total; i++){
+      doc.setPage(i);
+      doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text("Jason Mitchell Group — Generated " + dateStr, margin, footerY);
+      doc.text("Page " + i + " of " + total, pageW - margin, footerY, { align:"right" });
+    }
+
+    const safe = ($("name").value.trim() || "client").replace(/[^\w\-]+/g, "_");
+    const stamp = new Date().toISOString().slice(0,10);
+    doc.save(safe + "_intake_" + stamp + ".pdf");
+
+    // --- helpers ---
+    function drawMasthead(){
+      doc.setFillColor.apply(doc, NAVY);
+      doc.rect(0, 0, pageW, 88, "F");
+      doc.setFillColor.apply(doc, ORANGE);
+      doc.rect(0, 88, pageW, 4, "F");
+      doc.setTextColor(255,255,255);
+      doc.setFont("helvetica","bold"); doc.setFontSize(18);
+      doc.text("JASON MITCHELL GROUP", margin, 40);
+      doc.setFont("helvetica","normal"); doc.setFontSize(11);
+      doc.setTextColor(190,200,220);
+      doc.text("Client Intake", margin, 62);
+    }
+    function field(label, value){
+      ensure(48);
+      doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor.apply(doc, MUTED);
+      doc.text(label.toUpperCase(), margin, y);
+      y += 15;
+      doc.setFont("helvetica","normal"); doc.setFontSize(12); doc.setTextColor.apply(doc, INK);
+      const lines = doc.splitTextToSize(value, contentW);
+      doc.text(lines, margin, y);
+      y += lines.length * 15 + 14;
+    }
+    function ensure(needed){
+      if(y + needed > bottomLimit){ doc.addPage(); y = margin; }
+    }
+  }
+
+  // ---------- Clear ----------
+  clearBtn.addEventListener("click", () => {
+    $("name").value = ""; $("email").value = ""; $("address").value = "";
+    photos.length = 0; thumbs.innerHTML = "";
+    setError("name","err-name",false); setError("email","err-email",false);
+    showSkipped([]);
+    updateCount();
+  });
+
+  updateCount();
+})();
+</script>
+</body>
+</html>
