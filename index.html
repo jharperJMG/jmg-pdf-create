@@ -126,7 +126,7 @@
 <body>
 <div class="wrap">
   <div class="masthead">
-    <div class="brand">Jason Mitchell Group <span class="dot">•</span> Technology</div>
+    <div class="brand">Jason Mitchell Group</div>
     <h1>Client Intake Form</h1>
     <p>Enter the client's details, add photos, and generate a branded PDF.</p>
   </div>
@@ -358,7 +358,7 @@
     doc.addImage(JMG_LOGO, "PNG", (pageW - logoW) / 2, (238 - logoH) / 2, logoW, logoH);
 
     // document title
-    tracked("PHOTO REPORT", pageW / 2, 286, 9.5, GRAY, 3.5);
+    tracked("LISTING REPORT", pageW / 2, 286, 9.5, GRAY, 3.5);
     doc.setDrawColor.apply(doc, INK); doc.setLineWidth(1.2);
     doc.line(pageW / 2 - 20, 296, pageW / 2 + 20, 296);
 
@@ -459,7 +459,7 @@
 
     const safe = (name || "client").replace(/[^\w\-]+/g, "_");
     const stamp = new Date().toISOString().slice(0,10);
-    doc.save(safe + "_JMG_Photo_Report_" + stamp + ".pdf");
+    doc.save(safe + "_JMG_Listing_Report_" + stamp + ".pdf");
   }
 
   // ---------- Clear ----------
