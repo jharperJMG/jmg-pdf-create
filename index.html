@@ -140,6 +140,13 @@
   .help-bubble{position:absolute;left:-4px;bottom:150%;width:235px;max-width:72vw;background:var(--navy);color:#fff;font-size:12.5px;font-weight:400;line-height:1.45;padding:10px 12px;border-radius:8px;box-shadow:0 10px 28px rgba(15,28,54,.28);opacity:0;visibility:hidden;transition:opacity .12s;z-index:30;text-align:left;pointer-events:none}
   .help-bubble::after{content:"";position:absolute;left:9px;top:100%;border:6px solid transparent;border-top-color:var(--navy)}
   .help:hover .help-bubble,.help.open .help-bubble{opacity:1;visibility:visible}
+
+  /* segmented control */
+  .segmented{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg{flex:1;font:inherit;font-weight:600;font-size:15px;padding:13px;border:none;background:#fff;color:var(--ink);cursor:pointer;transition:background .12s,color .12s}
+  .seg + .seg{border-left:1px solid var(--line)}
+  .seg:hover{background:#f3f5f8}
+  .seg.active,.seg.active:hover{background:var(--navy);color:#fff}
 </style>
 </head>
 <body>
@@ -165,6 +172,28 @@
   </section>
 
   <div id="screen-form" class="hidden">
+  <div class="card">
+    <p class="eyebrow">Report Type<span class="help"><button type="button" class="help-btn" aria-label="Help">?</button><span class="help-bubble" role="tooltip">Choose BMA (Broker's Market Analysis) or Vacancy. This sets the title shown on the report cover.</span></span></p>
+    <div class="segmented" id="reportType">
+      <button type="button" class="seg active" data-type="BMA">BMA</button>
+      <button type="button" class="seg" data-type="Vacancy">Vacancy</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Agent Information</p>
+    <div class="field">
+      <label for="agentName">Agent full name <span class="req">*</span><span class="help"><button type="button" class="help-btn" aria-label="Help">?</button><span class="help-bubble" role="tooltip">The agent preparing this report. Appears under &ldquo;Prepared by&rdquo; on the cover.</span></span></label>
+      <input type="text" id="agentName" autocomplete="name" placeholder="Alex Carter" />
+      <div class="errline" id="err-agentName">Please enter the agent's name.</div>
+    </div>
+    <div class="field">
+      <label for="agentEmail">Agent email <span class="req">*</span><span class="help"><button type="button" class="help-btn" aria-label="Help">?</button><span class="help-bubble" role="tooltip">The agent's email address. It appears on the report cover.</span></span></label>
+      <input type="email" id="agentEmail" autocomplete="email" placeholder="acarter@jasonmitchellgroup.com" />
+      <div class="errline" id="err-agentEmail">Please enter a valid agent email address.</div>
+    </div>
+  </div>
+
   <div class="card">
     <p class="eyebrow">Client Information</p>
 
@@ -337,16 +366,30 @@
     $(errId).classList.toggle("show", show);
   }
   function validate(){
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const agentName = $("agentName").value.trim();
+    const agentEmail = $("agentEmail").value.trim();
     const name = $("name").value.trim();
     const email = $("email").value.trim();
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const agentEmailOk = re.test(agentEmail);
+    const emailOk = re.test(email);
+    setError("agentName", "err-agentName", !agentName);
+    setError("agentEmail", "err-agentEmail", !agentEmailOk);
     setError("name", "err-name", !name);
     setError("email", "err-email", !emailOk);
-    return name && emailOk;
+    return agentName && agentEmailOk && name && emailOk;
   }
-  ["name","email"].forEach(id => $(id).addEventListener("input", () => {
+  ["agentName","agentEmail","name","email"].forEach(id => $(id).addEventListener("input", () => {
     if($(id).classList.contains("invalid")) validate();
   }));
+
+  // report type selector
+  document.querySelectorAll("#reportType .seg").forEach(seg => {
+    seg.addEventListener("click", () => {
+      document.querySelectorAll("#reportType .seg").forEach(s => s.classList.remove("active"));
+      seg.classList.add("active");
+    });
+  });
 
   // ---------- PDF ----------
   genBtn.addEventListener("click", () => {
@@ -377,6 +420,10 @@
     const name = $("name").value.trim();
     const email = $("email").value.trim();
     const addressInline = $("address").value.trim().replace(/\s*\n\s*/g, ", ");
+    const agentName = $("agentName").value.trim();
+    const agentEmail = $("agentEmail").value.trim();
+    const typeSeg = document.querySelector("#reportType .seg.active");
+    const reportType = typeSeg ? typeSeg.dataset.type : "BMA";
     const contactEmail = "stephanielandry@jasonmitchellgroup.com";
     const contactDetail = "833.471.3337    |    3080 N. Civic Center Dr., Suite 100, Scottsdale, AZ 85251";
 
@@ -393,39 +440,62 @@
     doc.addImage(JMG_LOGO, "PNG", (pageW - logoW) / 2, (238 - logoH) / 2, logoW, logoH);
 
     // document title
-    tracked("LISTING REPORT", pageW / 2, 286, 9.5, GRAY, 3.5);
+    tracked(reportType.toUpperCase(), pageW / 2, 286, 9.5, GRAY, 3.5);
     doc.setDrawColor.apply(doc, INK); doc.setLineWidth(1.2);
     doc.line(pageW / 2 - 20, 296, pageW / 2 + 20, 296);
 
-    // client info panel
-    const pX = margin, pW = contentW, pTop = 320, pH = 232;
+    // client info panel (height computed from content, centered in the open area)
+    const pX = margin, pW = contentW;
+    const addrLines = addressInline ? doc.splitTextToSize(addressInline, pW - 90) : [];
+    const PAD_TOP = 40, NAME_ADV = 24, ADDR_ADV = 16, EMAIL_ADV = 20;
+    const PRE_DIV = 16, DIV_LBL = 24, LBL_VAL = 20, VAL_SUB = 15, PAD_BOT = 24;
+    const clientH = 30 + NAME_ADV + addrLines.length * ADDR_ADV + (email ? EMAIL_ADV : 0);
+    const pH = PAD_TOP + clientH + PRE_DIV + DIV_LBL + LBL_VAL + VAL_SUB + PAD_BOT;
+    const regionTop = 314, regionH = 272;
+    const pTop = regionTop + Math.max(0, (regionH - pH) / 2);
+
     doc.setFillColor.apply(doc, PANEL); doc.roundedRect(pX, pTop, pW, pH, 10, 10, "F");
     doc.setDrawColor.apply(doc, PANELB); doc.setLineWidth(1); doc.roundedRect(pX, pTop, pW, pH, 10, 10, "S");
 
-    let y = pTop + 44;
+    function fit(str, maxW, size, weight){
+      doc.setFont("helvetica", weight); doc.setFontSize(size);
+      if(doc.getTextWidth(str) <= maxW) return str;
+      while(str.length > 3 && doc.getTextWidth(str + "\u2026") > maxW) str = str.slice(0, -1);
+      return str + "\u2026";
+    }
+
+    // client identity (centered)
+    let y = pTop + PAD_TOP;
     tracked("PREPARED FOR", pageW / 2, y, 9.5, SOFT, 2.6); y += 30;
     doc.setFont("helvetica","bold"); doc.setFontSize(24); doc.setTextColor.apply(doc, INK);
-    doc.text(name || "\u2014", pageW / 2, y, { align:"center" }); y += 24;
-    if(addressInline){
+    doc.text(name || "\u2014", pageW / 2, y, { align:"center" }); y += NAME_ADV;
+    if(addrLines.length){
       doc.setFont("helvetica","normal"); doc.setFontSize(12); doc.setTextColor.apply(doc, GRAY);
-      const al = doc.splitTextToSize(addressInline, pW - 90);
-      doc.text(al, pageW / 2, y, { align:"center" }); y += al.length * 16;
+      doc.text(addrLines, pageW / 2, y, { align:"center" }); y += addrLines.length * ADDR_ADV;
     }
     if(email){
       doc.setFont("helvetica","normal"); doc.setFontSize(12); doc.setTextColor.apply(doc, SOFT);
-      doc.text(email, pageW / 2, y + 2, { align:"center" });
+      doc.text(email, pageW / 2, y, { align:"center" }); y += EMAIL_ADV;
     }
 
-    // divider + details row inside panel
-    const dy = pTop + pH - 64;
+    // divider
+    y += PRE_DIV;
     doc.setDrawColor.apply(doc, PANELB); doc.setLineWidth(1);
-    doc.line(pX + 34, dy, pX + pW - 34, dy);
-    const colL = pX + pW * 0.30, colR = pX + pW * 0.70;
-    tracked("PHOTOS", colL, dy + 24, 9.5, SOFT, 2);
-    tracked("DATE", colR, dy + 24, 9.5, SOFT, 2);
-    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor.apply(doc, INK);
-    doc.text(String(photos.length), colL, dy + 44, { align:"center" });
-    doc.text(dateStr, colR, dy + 44, { align:"center" });
+    doc.line(pX + 34, y, pX + pW - 34, y);
+
+    // two columns: PREPARED BY (agent)  |  DETAILS (photos + date)
+    y += DIV_LBL;
+    const colL = pX + pW * 0.30, colR = pX + pW * 0.70, colMax = pW * 0.42;
+    tracked("PREPARED BY", colL, y, 9.5, SOFT, 2);
+    tracked("DETAILS", colR, y, 9.5, SOFT, 2);
+    y += LBL_VAL;
+    doc.setFont("helvetica","bold"); doc.setFontSize(12.5); doc.setTextColor.apply(doc, INK);
+    doc.text(fit(agentName || "\u2014", colMax, 12.5, "bold"), colL, y, { align:"center" });
+    doc.text(photos.length === 1 ? "1 Photo" : photos.length + " Photos", colR, y, { align:"center" });
+    y += VAL_SUB;
+    doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor.apply(doc, GRAY);
+    if(agentEmail) doc.text(fit(agentEmail, colMax, 10, "normal"), colL, y, { align:"center" });
+    doc.text(dateStr, colR, y, { align:"center" });
 
     // bottom contact band
     const bTop = 600, bH = pageH - bTop;
@@ -494,14 +564,17 @@
 
     const safe = (name || "client").replace(/[^\w\-]+/g, "_");
     const stamp = new Date().toISOString().slice(0,10);
-    doc.save(safe + "_JMG_Listing_Report_" + stamp + ".pdf");
+    doc.save(safe + "_JMG_" + reportType + "_" + stamp + ".pdf");
   }
 
   // ---------- Clear ----------
   clearBtn.addEventListener("click", () => {
     $("name").value = ""; $("email").value = ""; $("address").value = "";
+    $("agentName").value = ""; $("agentEmail").value = "";
     photos.length = 0; thumbs.innerHTML = "";
     setError("name","err-name",false); setError("email","err-email",false);
+    setError("agentName","err-agentName",false); setError("agentEmail","err-agentEmail",false);
+    document.querySelectorAll("#reportType .seg").forEach((s, idx) => s.classList.toggle("active", idx === 0));
     showSkipped([]);
     updateCount();
   });
