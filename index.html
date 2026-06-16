@@ -121,6 +121,25 @@
   .btn-ghost:hover{border-color:#c2c9d6}
 
   .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:26px}
+
+  /* intro / job aid */
+  .hidden{display:none}
+  .lead{font-size:14.5px;color:var(--ink);margin:0 0 18px;line-height:1.5}
+  .steps{list-style:none;margin:0;padding:0}
+  .steps li{display:flex;gap:14px;padding:15px 0;border-bottom:1px solid var(--line)}
+  .steps li:last-child{border-bottom:none}
+  .stepnum{flex:0 0 30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .steptxt{font-size:14.5px;color:var(--ink);line-height:1.45;padding-top:4px}
+  .steptxt strong{color:var(--navy)}
+  .note{margin-top:18px;font-size:13px;color:var(--muted);background:#f6f8fb;border:1px solid var(--line);border-radius:10px;padding:12px 14px;line-height:1.5}
+
+  /* field help tooltip */
+  .help{position:relative;display:inline-flex;vertical-align:middle;margin-left:6px}
+  .help-btn{width:17px;height:17px;border-radius:50%;border:none;background:#cbd2dd;color:#fff;font-size:11px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .help-btn:hover{background:var(--orange)}
+  .help-bubble{position:absolute;left:-4px;bottom:150%;width:235px;max-width:72vw;background:var(--navy);color:#fff;font-size:12.5px;font-weight:400;line-height:1.45;padding:10px 12px;border-radius:8px;box-shadow:0 10px 28px rgba(15,28,54,.28);opacity:0;visibility:hidden;transition:opacity .12s;z-index:30;text-align:left;pointer-events:none}
+  .help-bubble::after{content:"";position:absolute;left:9px;top:100%;border:6px solid transparent;border-top-color:var(--navy)}
+  .help:hover .help-bubble,.help.open .help-bubble{opacity:1;visibility:visible}
 </style>
 </head>
 <body>
@@ -131,30 +150,45 @@
     <p>Enter the client's details, add photos, and generate a branded PDF.</p>
   </div>
 
+  <section id="screen-intro" class="card">
+    <p class="eyebrow">Before you start</p>
+    <p class="lead">This tool builds a branded JMG Listing Report from a client's details and property photos — it takes about a minute. Here's all you do:</p>
+    <ol class="steps">
+      <li><span class="stepnum">1</span><span class="steptxt"><strong>Enter the client's information</strong> — full name, email, and the property address.</span></li>
+      <li><span class="stepnum">2</span><span class="steptxt"><strong>Add the property photos</strong> — tap to select or drag them in. Add as many as you like; you can remove any before generating.</span></li>
+      <li><span class="stepnum">3</span><span class="steptxt"><strong>Click Generate PDF</strong> — a finished Listing Report downloads to your device, ready to share.</span></li>
+    </ol>
+    <p class="note">Everything happens on your device — no client information is uploaded or stored anywhere. Tap or hover the <strong>?</strong> next to any field for tips on what to enter.</p>
+    <div class="actions">
+      <button class="btn btn-primary" id="startBtn">Next &rarr;</button>
+    </div>
+  </section>
+
+  <div id="screen-form" class="hidden">
   <div class="card">
     <p class="eyebrow">Client Information</p>
 
     <div class="field">
-      <label for="name">Full name <span class="req">*</span></label>
+      <label for="name">Full name <span class="req">*</span><span class="help"><button type="button" class="help-btn" aria-label="Help">?</button><span class="help-bubble" role="tooltip">The client's full name as it should appear on the report &mdash; e.g., David &amp; Sarah Whitfield.</span></span></label>
       <input type="text" id="name" autocomplete="name" placeholder="Jane Doe" />
       <div class="errline" id="err-name">Please enter a name.</div>
     </div>
 
     <div class="field">
-      <label for="email">Email <span class="req">*</span></label>
+      <label for="email">Email <span class="req">*</span><span class="help"><button type="button" class="help-btn" aria-label="Help">?</button><span class="help-bubble" role="tooltip">The client's email address. It only appears on the report &mdash; nothing is emailed automatically.</span></span></label>
       <input type="email" id="email" autocomplete="email" placeholder="jane@example.com" />
       <div class="errline" id="err-email">Please enter a valid email address.</div>
     </div>
 
     <div class="field">
-      <label for="address">Address</label>
+      <label for="address">Address<span class="help"><button type="button" class="help-btn" aria-label="Help">?</button><span class="help-bubble" role="tooltip">The full property address being listed. Put the street on one line and the city, state, and ZIP on the next.</span></span></label>
       <textarea id="address" placeholder="123 Main St&#10;Phoenix, AZ 85004"></textarea>
       <div class="hint">Street, city, state, and ZIP — one per line is fine.</div>
     </div>
   </div>
 
   <div class="card">
-    <p class="eyebrow">Photos</p>
+    <p class="eyebrow">Photos<span class="help"><button type="button" class="help-btn" aria-label="Help">?</button><span class="help-bubble" role="tooltip">Upload photos of the property &mdash; tap to select or drag them in, several at once. JPG or PNG work best; iPhone HEIC photos may not open in some browsers.</span></span></p>
 
     <div class="drop" id="drop">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -172,6 +206,7 @@
   <div class="actions">
     <button class="btn btn-primary" id="generate">Generate PDF</button>
     <button class="btn btn-ghost" id="clear">Clear form</button>
+  </div>
   </div>
 
   <div class="foot">Generated documents are created on this device — nothing is uploaded.</div>
@@ -472,6 +507,33 @@
   });
 
   updateCount();
+})();
+</script>
+<script>
+(function(){
+  // intro -> form
+  var startBtn = document.getElementById("startBtn");
+  if(startBtn){
+    startBtn.addEventListener("click", function(){
+      document.getElementById("screen-intro").classList.add("hidden");
+      document.getElementById("screen-form").classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+  // field help: hover on desktop, tap to toggle on touch
+  function closeAll(){
+    document.querySelectorAll(".help.open").forEach(function(h){ h.classList.remove("open"); });
+  }
+  document.querySelectorAll(".help-btn").forEach(function(btn){
+    btn.addEventListener("click", function(e){
+      e.preventDefault(); e.stopPropagation();
+      var parent = btn.parentNode;
+      var open = parent.classList.contains("open");
+      closeAll();
+      if(!open) parent.classList.add("open");
+    });
+  });
+  document.addEventListener("click", closeAll);
 })();
 </script>
 </body>
