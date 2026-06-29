@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Client Intake — Jason Mitchell Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
   :root{
     --navy:#0F1C36;
@@ -217,13 +218,13 @@
   </div>
 
   <div class="card">
-    <p class="eyebrow">Photos<span class="help"><button type="button" class="help-btn" aria-label="Help">?</button><span class="help-bubble" role="tooltip">Upload photos of the property &mdash; tap to select or drag them in, several at once. JPG or PNG work best; iPhone HEIC photos may not open in some browsers.</span></span></p>
+    <p class="eyebrow">Photos<span class="help"><button type="button" class="help-btn" aria-label="Help">?</button><span class="help-bubble" role="tooltip">Upload photos of the property &mdash; tap to select or drag them in, several at once. JPG, PNG, and HEIC (iPhone) photos are all supported.</span></span></p>
 
     <div class="drop" id="drop">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       <div><strong>Tap to add photos</strong> or drag them here</div>
       <div class="sub">JPG, PNG, or HEIC — multiple at once</div>
-      <input type="file" id="file" accept="image/*" multiple hidden />
+      <input type="file" id="file" accept="image/*,.heic,.heif,image/heic,image/heif" multiple hidden />
     </div>
 
     <div class="processing" id="processing">Processing photos…</div>
@@ -266,10 +267,16 @@
   drop.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
   fileInput.addEventListener("change", e => { handleFiles(e.target.files); fileInput.value = ""; });
 
+  function isHeic(f){
+    const t = (f.type || "").toLowerCase(), n = (f.name || "").toLowerCase();
+    return t.indexOf("heic") > -1 || t.indexOf("heif") > -1 || /\.(heic|heif)$/.test(n);
+  }
+  function isImageFile(f){ return (f.type || "").startsWith("image/") || isHeic(f); }
+
   async function handleFiles(fileList){
     const all = Array.from(fileList);
-    const files = all.filter(f => f.type.startsWith("image/"));
-    const skipped = all.filter(f => !f.type.startsWith("image/")).map(f => f.name || "file");
+    const files = all.filter(isImageFile);
+    const skipped = all.filter(f => !isImageFile(f)).map(f => f.name || "file");
     if(files.length){
       processing.classList.add("show");
       genBtn.disabled = true;
@@ -295,19 +302,27 @@
     if(!names.length){ notice.classList.remove("show"); notice.textContent = ""; return; }
     const list = names.join(", ");
     notice.textContent = names.length === 1
-      ? "Couldn\u2019t read \u201C" + list + "\u201D \u2014 it may be an unsupported format (HEIC photos won\u2019t open in some browsers). Try a JPG or PNG."
-      : "Couldn\u2019t read " + names.length + " files (" + list + ") \u2014 they may be an unsupported format like HEIC in this browser. Try JPG or PNG.";
+      ? "Couldn\u2019t read \u201C" + list + "\u201D \u2014 it may be a non-image or corrupted file. Try a JPG, PNG, or HEIC."
+      : "Couldn\u2019t read " + names.length + " files (" + list + ") \u2014 they may be non-image or corrupted. Try JPG, PNG, or HEIC.";
     notice.classList.add("show");
   }
 
   // Resize + re-encode to JPEG; respects EXIF orientation where supported.
   async function processImage(file){
     const MAX = 1600;
+    let blob = file;
+    // Convert HEIC/HEIF to JPEG so it works in every browser, not just Safari
+    if(isHeic(file) && typeof heic2any === "function"){
+      try{
+        const out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+        blob = Array.isArray(out) ? out[0] : out;
+      }catch(_){ /* fall back to native decode (Safari can read HEIC directly) */ }
+    }
     let source;
     try{
-      source = await createImageBitmap(file, { imageOrientation: "from-image" });
+      source = await createImageBitmap(blob, { imageOrientation: "from-image" });
     }catch(_){
-      source = await loadImgEl(file);
+      source = await loadImgEl(blob);
     }
     const sw = source.width, sh = source.height;
     const scale = Math.min(1, MAX / Math.max(sw, sh));
